@@ -1,0 +1,42 @@
+{
+  "project": "WatchOS Event Detection App",
+  "agents": [
+    {
+      "name": "ui-agent",
+      "role": "SwiftUI interface developer",
+      "scope": [
+        "Views",
+        "ViewModels"
+      ],
+      "tasks": [
+        "Create start/stop detection UI",
+        "Implement active/inactive state",
+        "Optimize for Apple Watch screen"
+      ]
+    },
+    {
+      "name": "sensor-agent",
+      "role": "CoreMotion developer",
+      "scope": [
+        "Services/Motion"
+      ],
+      "tasks": [
+        "Implement accelerometer manager",
+        "Start/stop acquisition",
+        "Handle motion permissions"
+      ]
+    },
+    {
+      "name": "ml-agent",
+      "role": "ML architecture designer",
+      "scope": [
+        "Services/ML"
+      ],
+      "tasks": [
+        "Create prediction interface",
+        "Prepare streaming pipeline",
+        "Add future CoreML placeholders"
+      ]
+    }
+  ]
+}
