@@ -7,18 +7,29 @@
 
 import SwiftUI
 
+/// Thin root wrapper. The real UI lives in `DetectionView`; services are
+/// supplied via `@EnvironmentObject` from `Essential_Watch_Watch_AppApp`.
 struct ContentView: View {
+    @EnvironmentObject private var motion: MotionManager
+    @EnvironmentObject private var prediction: PlaceholderPredictionService
+
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        // Paged TabView: swipe horizontally between the main detection screen
+        // and the experimental 3D-sphere visualization. The sphere page is a
+        // prototype (see `MotionSphereView`) and is expected to be removed or
+        // replaced once a real 3D renderer is wired in.
+        TabView {
+            DetectionView(motion: motion, prediction: prediction)
+            MotionSphereView()
         }
-        .padding()
+        .tabViewStyle(.page)
     }
 }
 
 #Preview {
-    ContentView()
+    let motion = MotionManager()
+    let prediction = PlaceholderPredictionService()
+    return ContentView()
+        .environmentObject(motion)
+        .environmentObject(prediction)
 }

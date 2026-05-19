@@ -9,9 +9,22 @@ import SwiftUI
 
 @main
 struct Essential_Watch_Watch_AppApp: App {
+    @StateObject private var motion = MotionManager()
+    @StateObject private var prediction = PlaceholderPredictionService()
+
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(motion)
+                .environmentObject(prediction)
+                .onAppear {
+                    // Forward each accelerometer sample into the prediction
+                    // pipeline. `[weak prediction]` avoids a retain cycle if
+                    // the closure outlives the service.
+                    motion.onSample = { [weak prediction] sample in
+                        prediction?.consume(sample)
+                    }
+                }
         }
     }
 }

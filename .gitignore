@@ -1,1 +1,33 @@
-.claude/settings.local.json
+# Claude / AI tooling
+.claude/
+CLAUDE.md
+*.claude*
+watchos_ai_coder_prompt.md
+Progect_agents.json
+
+# Docs / scratch
+TUTORIAL.md
+
+# Scripts
+generate_appicons.sh
+
+# macOS
+.DS_Store
+
+# Xcode
+xcuserdata/
+*.xcuserstate
+*.xcuserdatad/
+build/
+DerivedData/
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Swift Package Manager
+.swiftpm/
+.build/
+Packages/
+Package.resolved

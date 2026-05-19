@@ -2,23 +2,26 @@
 //  ContentView.swift
 //  Essential_Watch
 //
-//  Created by Alex Faloppa on 15/05/26.
-//
 
 import SwiftUI
 
 struct ContentView: View {
+    @EnvironmentObject private var motion: MotionManager
+    @EnvironmentObject private var prediction: PlaceholderPredictionService
+
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        NavigationStack {
+            DetectionView(motion: motion, prediction: prediction)
+                .navigationTitle("Essential Watch")
+                .navigationBarTitleDisplayMode(.inline)
         }
-        .padding()
     }
 }
 
 #Preview {
-    ContentView()
+    let motion = MotionManager()
+    let prediction = PlaceholderPredictionService()
+    return ContentView()
+        .environmentObject(motion)
+        .environmentObject(prediction)
 }
