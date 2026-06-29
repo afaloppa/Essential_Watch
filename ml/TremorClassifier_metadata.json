@@ -1,0 +1,49 @@
+{
+  "features": [
+    "mag_band_ratio",
+    "mag_dom_freq",
+    "mag_peak_power",
+    "mag_total_power",
+    "mag_spec_entropy",
+    "mag_spec_centroid",
+    "mag_rms",
+    "mag_std",
+    "mag_zcr",
+    "x_band_ratio",
+    "x_rms",
+    "y_band_ratio",
+    "y_rms",
+    "z_band_ratio",
+    "z_rms",
+    "max_axis_band_ratio",
+    "mean_axis_band_ratio"
+  ],
+  "labels": [
+    "rest",
+    "tremor"
+  ],
+  "window_seconds": 2.0,
+  "sample_rate_hz": 50,
+  "input_signal": "userAcceleration (g), gravity removed",
+  "lopo_cv_accuracy": 0.8538921527675402,
+  "lopo_cv_std": 0.12215957839515418,
+  "feature_importances": {
+    "z_rms": 0.19206288520149878,
+    "y_rms": 0.15074468825862672,
+    "mag_rms": 0.1040477966488941,
+    "mag_total_power": 0.08394929635853662,
+    "x_rms": 0.07652653014089937,
+    "mag_peak_power": 0.06940293615776093,
+    "mag_std": 0.061133030688946675,
+    "mag_zcr": 0.05850728476364727,
+    "mag_band_ratio": 0.032726889219622836,
+    "mag_dom_freq": 0.029888336676281376,
+    "z_band_ratio": 0.02639365462143085,
+    "mean_axis_band_ratio": 0.024730903297505956,
+    "x_band_ratio": 0.02312964717352443,
+    "mag_spec_centroid": 0.019935256386141315,
+    "y_band_ratio": 0.019052151819272084,
+    "max_axis_band_ratio": 0.014848911038562495,
+    "mag_spec_entropy": 0.012919801548848113
+  }
+}

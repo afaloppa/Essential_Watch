@@ -9,11 +9,11 @@ import SwiftUI
 /// current prediction emitted by the prediction service.
 struct DetectionView: View {
     @EnvironmentObject private var motion: MotionManager
-    @EnvironmentObject private var prediction: PlaceholderPredictionService
+    @EnvironmentObject private var prediction: TremorPredictionService
 
     @StateObject private var viewModel: DetectionViewModel
 
-    init(motion: MotionManager, prediction: PlaceholderPredictionService) {
+    init(motion: MotionManager, prediction: TremorPredictionService) {
         _viewModel = StateObject(
             wrappedValue: DetectionViewModel(motion: motion, prediction: prediction)
         )
@@ -32,7 +32,8 @@ struct DetectionView: View {
 
             Text(prediction.latestPrediction ?? "—")
                 .font(.footnote)
-                .foregroundStyle(.primary)
+                .fontWeight(prediction.isTremor ? .semibold : .regular)
+                .foregroundStyle(prediction.isTremor ? Color.orange : .primary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
 
@@ -51,7 +52,7 @@ struct DetectionView: View {
 /// them to `DetectionView`'s injecting initializer.
 struct DetectionScreen: View {
     @EnvironmentObject private var motion: MotionManager
-    @EnvironmentObject private var prediction: PlaceholderPredictionService
+    @EnvironmentObject private var prediction: TremorPredictionService
 
     var body: some View {
         DetectionView(motion: motion, prediction: prediction)
@@ -60,7 +61,7 @@ struct DetectionScreen: View {
 
 #Preview {
     let motion = MotionManager()
-    let prediction = PlaceholderPredictionService()
+    let prediction = TremorPredictionService()
     return DetectionView(motion: motion, prediction: prediction)
         .environmentObject(motion)
         .environmentObject(prediction)

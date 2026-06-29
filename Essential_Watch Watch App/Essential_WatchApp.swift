@@ -10,7 +10,7 @@ import SwiftUI
 @main
 struct Essential_Watch_Watch_AppApp: App {
     @StateObject private var motion = MotionManager()
-    @StateObject private var prediction = PlaceholderPredictionService()
+    @StateObject private var prediction = TremorPredictionService()
 
     var body: some Scene {
         WindowGroup {

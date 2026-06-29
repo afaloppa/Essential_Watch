@@ -31,3 +31,10 @@ DerivedData/
 .build/
 Packages/
 Package.resolved
+
+#Data
+Bilateral_tremor_data/
+
+# ML pipeline
+ml/.venv/
+ml/features.csv

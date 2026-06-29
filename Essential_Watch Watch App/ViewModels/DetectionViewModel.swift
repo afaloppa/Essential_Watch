@@ -17,13 +17,13 @@ import SwiftUI
 final class DetectionViewModel: ObservableObject {
 
     private let motion: MotionManager
-    private let prediction: PlaceholderPredictionService
+    private let prediction: TremorPredictionService
 
     /// User-facing error message produced by the most recent `start()` attempt.
     /// Cleared when the next `start()` succeeds or when the user stops.
     @Published var errorMessage: String?
 
-    init(motion: MotionManager, prediction: PlaceholderPredictionService) {
+    init(motion: MotionManager, prediction: TremorPredictionService) {
         self.motion = motion
         self.prediction = prediction
     }
@@ -31,12 +31,14 @@ final class DetectionViewModel: ObservableObject {
     var isActive: Bool { motion.isActive }
     var latestSample: AccelerometerSample? { motion.latestSample }
     var latestPrediction: String? { prediction.latestPrediction }
+    var isTremor: Bool { prediction.isTremor }
 
     /// Toggles the motion stream. Errors thrown by `start()` are caught and
     /// exposed via `errorMessage`.
     func toggle() {
         if motion.isActive {
             motion.stop()
+            prediction.reset()
             errorMessage = nil
         } else {
             do {

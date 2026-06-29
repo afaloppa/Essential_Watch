@@ -11,7 +11,7 @@ import SwiftUI
 /// supplied via `@EnvironmentObject` from `Essential_Watch_Watch_AppApp`.
 struct ContentView: View {
     @EnvironmentObject private var motion: MotionManager
-    @EnvironmentObject private var prediction: PlaceholderPredictionService
+    @EnvironmentObject private var prediction: TremorPredictionService
 
     var body: some View {
         // Paged TabView: swipe horizontally between the main detection screen
@@ -28,7 +28,7 @@ struct ContentView: View {
 
 #Preview {
     let motion = MotionManager()
-    let prediction = PlaceholderPredictionService()
+    let prediction = TremorPredictionService()
     return ContentView()
         .environmentObject(motion)
         .environmentObject(prediction)
