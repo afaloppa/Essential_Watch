@@ -5,23 +5,15 @@
 
 import SwiftUI
 
+/// The iOS companion is a read-only mirror of the watch's tremor detection.
+/// It does not use the phone's own accelerometer.
 struct ContentView: View {
-    @EnvironmentObject private var motion: MotionManager
-    @EnvironmentObject private var prediction: PlaceholderPredictionService
-
     var body: some View {
-        NavigationStack {
-            DetectionView(motion: motion, prediction: prediction)
-                .navigationTitle("Essential Watch")
-                .navigationBarTitleDisplayMode(.inline)
-        }
+        TremorWatchView()
     }
 }
 
 #Preview {
-    let motion = MotionManager()
-    let prediction = PlaceholderPredictionService()
-    return ContentView()
-        .environmentObject(motion)
-        .environmentObject(prediction)
+    ContentView()
+        .environmentObject(TremorSyncReceiver())
 }

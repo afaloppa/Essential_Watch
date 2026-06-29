@@ -73,6 +73,33 @@ enum TremorFeatures {
         ]
     }
 
+    /// Physical RMS of acceleration within the tremor band (4–12 Hz), in g,
+    /// combined across the three axes. Used as an amplitude gate to reject
+    /// near-steady hands (sensor noise / physiological micro-tremor) that the
+    /// scale-invariant classifier features would otherwise flag.
+    ///
+    /// Uses Parseval's theorem on the un-windowed spectrum: for a mean-removed
+    /// signal the in-band variance is `2 * Σ|X_k|² / N²` (one-sided).
+    static func tremorBandRMS(window: [AccelerometerSample]) -> Double {
+        let n = window.count
+        guard n > 1 else { return 0 }
+        let binHz = sampleRate / Double(n)
+        let axes: [[Double]] = [
+            window.map { $0.x }, window.map { $0.y }, window.map { $0.z },
+        ]
+
+        var totalVariance = 0.0
+        for axis in axes {
+            let power = powerSpectrum(axis, applyWindow: false)
+            var bandSum = 0.0
+            for k in power.indices where tremorBand.contains(Double(k) * binHz) {
+                bandSum += power[k]
+            }
+            totalVariance += 2.0 * bandSum / (Double(n) * Double(n))
+        }
+        return sqrt(totalVariance)
+    }
+
     // MARK: - Spectral features
 
     private struct SpectralFeatures {
@@ -133,12 +160,16 @@ enum TremorFeatures {
         return result
     }
 
-    /// One-sided power spectrum of a Hann-windowed (mean-removed) signal.
-    /// Equivalent to `|numpy.fft.rfft((sig-mean)*hanning)|**2`.
+    /// One-sided power spectrum of a mean-removed signal.
+    /// With `applyWindow` (default) it Hann-windows first, matching
+    /// `|numpy.fft.rfft((sig-mean)*hanning)|**2` — used for the model features.
+    /// Without it, the spectrum is Parseval-correct, so band energy maps back to
+    /// a physical RMS in g — used by `tremorBandRMS` for the amplitude gate.
     ///
     /// A direct DFT is used (window is only ~100 samples), which avoids the
     /// power-of-two / supported-length constraints of vDSP's FFT.
-    private static func powerSpectrum(_ signal: [Double]) -> [Double] {
+    private static func powerSpectrum(_ signal: [Double],
+                                      applyWindow: Bool = true) -> [Double] {
         let n = signal.count
         let mean = signal.reduce(0, +) / Double(n)
 
@@ -146,8 +177,13 @@ enum TremorFeatures {
         var windowed = [Double](repeating: 0, count: n)
         let denom = Double(n - 1)
         for j in 0..<n {
-            let h = 0.5 - 0.5 * cos(2.0 * .pi * Double(j) / denom)
-            windowed[j] = (signal[j] - mean) * h
+            let centered = signal[j] - mean
+            if applyWindow {
+                let h = 0.5 - 0.5 * cos(2.0 * .pi * Double(j) / denom)
+                windowed[j] = centered * h
+            } else {
+                windowed[j] = centered
+            }
         }
 
         let half = n / 2

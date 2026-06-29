@@ -7,6 +7,15 @@ essential tremor** in real time.
 The model is trained from clinical OFF-DBS wrist-accelerometer recordings; see
 [`ml/README.md`](ml/README.md) for the data-prep and training pipeline.
 
+## Screenshots
+
+| Watch (detecting) | iPhone — no tremor | iPhone — tremor |
+|:---:|:---:|:---:|
+| <img src="App_screen/Watch_View.PNG" width="200"> | <img src="App_screen/Phone_notremor.PNG" width="200"> | <img src="App_screen/Phone_tremor.PNG" width="200"> |
+
+The watch runs detection; the iPhone mirrors the live tremor likelihood over
+WatchConnectivity.
+
 ## What it does today
 
 - **Watch app (primary target)**
@@ -15,7 +24,10 @@ The model is trained from clinical OFF-DBS wrist-accelerometer recordings; see
     (e.g. *"Tremor 87%"* / *"No tremor 92%"*, highlighted when tremor is detected)
   - Real-time tremor detection: gravity removal → 2 s sliding window →
     feature extraction → Core ML classification, a few times per second
-  - Experimental `MotionSphereView` 3D-ish visualization (swipeable page)
+  - **Amplitude gate**: windows whose tremor-band (4–12 Hz) acceleration RMS is
+    below a small threshold (default 0.03 g) are reported as *No tremor*
+    regardless of the classifier, suppressing false positives from sensor noise
+    and low-amplitude physiological micro-tremor on a steady hand
   - Clean MVVM split:
     - `Views/` — SwiftUI screens
     - `ViewModels/DetectionViewModel.swift` — UI state
@@ -23,9 +35,13 @@ The model is trained from clinical OFF-DBS wrist-accelerometer recordings; see
     - `Services/ML/` — `PredictionServicing` protocol, `TremorPredictionService`
       (real Core ML inference), `TremorFeatures` (feature extraction),
       `SampleBuffer`, `TremorClassifier.mlmodel`
-- **iOS companion app** — scaffolded shell that embeds the watch app via the
-  *Embed Watch Content* build phase. Still uses `PlaceholderPredictionService`;
-  no companion features yet.
+    - `Services/Sync/` — `TremorSyncSender` (pushes results to the iPhone)
+- **iOS companion app** — embeds the watch app via the *Embed Watch Content*
+  build phase. A single screen mirrors the watch's live tremor probability (a
+  ring + percentage) streamed over **WatchConnectivity**. The phone does **not**
+  use its own accelerometer — the model runs on the watch and the phone is a
+  read-only display. (Raw 50 Hz accelerometer isn't streamed — WatchConnectivity
+  isn't suited to smooth high-rate data — so only the ~2 Hz prediction is sent.)
 
 The architecture is service-oriented: `TremorPredictionService` is injected
 behind the `PredictionServicing` protocol, so the model can be retrained or
@@ -84,6 +100,24 @@ Phase-Specific Deep Brain Stimulation for Postural Tremor.* Movement Disorders,
 
 Please cite the dataset and paper above if you use this work, and follow the
 dataset's own license/terms from the Oxford data portal.
+
+## Model performance
+
+Evaluated with **leave-one-participant-out (LOPO)** cross-validation — each
+patient is held out in turn, so these numbers reflect generalisation to a *new*
+patient. Pooled LOPO accuracy is **~0.83** (mean per-patient **~0.85**), ROC
+**AUC ≈ 0.93**. The hardest case (cDBS_06) had weak, low-amplitude tremor.
+
+| | |
+|:---:|:---:|
+| <img src="ml/figures/confusion_matrix.png" width="360"> | <img src="ml/figures/roc_curve.png" width="360"> |
+| <img src="ml/figures/per_participant_accuracy.png" width="360"> | <img src="ml/figures/feature_importances.png" width="360"> |
+
+Regenerate after retraining with:
+
+```sh
+ml/.venv/bin/python ml/make_figures.py   # writes ml/figures/*.png
+```
 
 ## Build & run
 

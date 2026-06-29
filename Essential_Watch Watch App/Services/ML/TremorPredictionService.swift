@@ -31,6 +31,17 @@ final class TremorPredictionService: ObservableObject, PredictionServicing {
     /// Whether the latest window was classified as tremor.
     @Published private(set) var isTremor: Bool = false
 
+    /// Measured tremor-band (4–12 Hz) acceleration RMS of the latest window, in
+    /// g. Exposed mainly so the gate threshold can be tuned on a real wrist.
+    @Published private(set) var tremorBandG: Double?
+
+    /// Minimum tremor-band RMS (g) required before the model output is trusted.
+    /// Windows below this are reported as "No tremor" regardless of the
+    /// classifier — this suppresses false positives from sensor noise and
+    /// low-amplitude physiological micro-tremor on a near-steady hand.
+    /// Tunable: lower it to catch milder tremor, raise it to be stricter.
+    let minTremorBandG: Double
+
     private let windowSize: Int
     private var buffer: SampleBuffer
 
@@ -50,15 +61,19 @@ final class TremorPredictionService: ObservableObject, PredictionServicing {
     ///   - sampleRate: incoming sample rate in Hz (must match `MotionManager`).
     ///   - inferenceHz: how often to classify once the window is full.
     ///   - gravityCutoffHz: cutoff of the gravity-tracking low-pass filter.
+    ///   - minTremorBandG: amplitude gate; tremor-band RMS (g) below this is
+    ///     reported as "No tremor". Default 0.03 g ≈ above a steady-hand floor.
     init(windowSize: Int = 100,
          sampleRate: Double = 50.0,
          inferenceHz: Double = 2.0,
-         gravityCutoffHz: Double = 0.5) {
+         gravityCutoffHz: Double = 0.5,
+         minTremorBandG: Double = 0.03) {
         self.windowSize = windowSize
         self.buffer = SampleBuffer(capacity: windowSize)
         self.inferenceStride = max(1, Int((sampleRate / inferenceHz).rounded()))
         // First-order low-pass coefficient for the given cutoff.
         self.gravityAlpha = 1 - exp(-2 * .pi * gravityCutoffHz / sampleRate)
+        self.minTremorBandG = minTremorBandG
         self.model = Self.loadModel()
     }
 
@@ -106,6 +121,7 @@ final class TremorPredictionService: ObservableObject, PredictionServicing {
         samplesSinceInference = 0
         latestPrediction = nil
         tremorProbability = nil
+        tremorBandG = nil
         isTremor = false
     }
 
@@ -117,7 +133,20 @@ final class TremorPredictionService: ObservableObject, PredictionServicing {
             return
         }
 
-        let features = TremorFeatures.extract(window: buffer.snapshot)
+        let window = buffer.snapshot
+
+        // Amplitude gate: ignore the classifier when the wrist is near-steady.
+        let bandRMS = TremorFeatures.tremorBandRMS(window: window)
+        tremorBandG = bandRMS
+        guard bandRMS >= minTremorBandG else {
+            isTremor = false
+            tremorProbability = 0
+            latestPrediction = "No tremor"
+            TremorSyncSender.shared.send(probability: 0, isTremor: false)
+            return
+        }
+
+        let features = TremorFeatures.extract(window: window)
         let inputs = features.mapValues { MLFeatureValue(double: $0) }
 
         guard let provider = try? MLDictionaryFeatureProvider(dictionary: inputs),
@@ -134,5 +163,6 @@ final class TremorPredictionService: ObservableObject, PredictionServicing {
         tremorProbability = p
         let pct = Int(((isTremor ? p : 1 - p) * 100).rounded())
         latestPrediction = isTremor ? "Tremor \(pct)%" : "No tremor \(pct)%"
+        TremorSyncSender.shared.send(probability: p, isTremor: isTremor)
     }
 }

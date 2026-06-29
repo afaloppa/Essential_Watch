@@ -24,11 +24,14 @@ Phase-Specific Deep Brain Stimulation for Postural Tremor.* Movement Disorders,
 ```sh
 # one-time setup (isolated env; sklearn 1.5.1 is required by coremltools 9)
 python3 -m venv ml/.venv
-ml/.venv/bin/pip install "scikit-learn==1.5.1" "coremltools==9.0" "numpy<2" scipy pandas h5py
+ml/.venv/bin/pip install "scikit-learn==1.5.1" "coremltools==9.0" "numpy<2" scipy pandas h5py matplotlib
 
 # build the dataset, then train + export
 ml/.venv/bin/python ml/prepare_data.py
 ml/.venv/bin/python ml/train.py
+
+# (optional) regenerate the README figures into ml/figures/
+ml/.venv/bin/python ml/make_figures.py
 ```
 
 ## Design decisions

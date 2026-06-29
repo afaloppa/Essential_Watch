@@ -38,3 +38,8 @@ Bilateral_tremor_data/
 # ML pipeline
 ml/.venv/
 ml/features.csv
+__pycache__/
+*.pyc
+# Reproducible training output — the deployed copy lives in the watch app bundle
+# (Essential_Watch Watch App/Services/ML/TremorClassifier.mlmodel)
+ml/TremorClassifier.mlmodel

@@ -14,15 +14,9 @@ struct ContentView: View {
     @EnvironmentObject private var prediction: TremorPredictionService
 
     var body: some View {
-        // Paged TabView: swipe horizontally between the main detection screen
-        // and the experimental 3D-sphere visualization. The sphere page is a
-        // prototype (see `MotionSphereView`) and is expected to be removed or
-        // replaced once a real 3D renderer is wired in.
-        TabView {
-            DetectionView(motion: motion, prediction: prediction)
-            MotionSphereView()
-        }
-        .tabViewStyle(.page)
+        // The watch focuses purely on tremor detection. The accelerometer
+        // visualization now lives in the iOS companion app (`MotionSphereView`).
+        DetectionView(motion: motion, prediction: prediction)
     }
 }
 

@@ -7,19 +7,14 @@ import SwiftUI
 
 @main
 struct Essential_WatchApp: App {
-    @StateObject private var motion = MotionManager()
-    @StateObject private var prediction = PlaceholderPredictionService()
+    // The phone only mirrors the watch's tremor result; it has no local motion
+    // capture or model of its own.
+    @StateObject private var watchTremor = TremorSyncReceiver()
 
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .environmentObject(motion)
-                .environmentObject(prediction)
-                .onAppear {
-                    motion.onSample = { [weak prediction] sample in
-                        prediction?.consume(sample)
-                    }
-                }
+                .environmentObject(watchTremor)
         }
     }
 }
