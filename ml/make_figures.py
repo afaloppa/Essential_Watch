@@ -8,13 +8,14 @@ Generate model-statistics figures for the README. Run AFTER train.py:
     ml/.venv/bin/python ml/make_figures.py
 
 Produces (in ml/figures/):
-  - confusion_matrix.png      pooled leave-one-participant-out (LOPO) confusion
+  - confusion_matrix.png      pooled leave-one-out (LOO) confusion
   - per_participant_accuracy.png
-  - roc_curve.png             pooled LOPO ROC + AUC
+  - roc_curve.png             pooled LOO ROC + AUC with a 95% bootstrap CI band
   - feature_importances.png   RandomForest importances (model trained on all data)
 
-LOPO = the realistic "new patient" evaluation: each participant is held out in
-turn, the model trains on the rest, and predictions are pooled.
+LOO = leave-one-out cross-validation: each participant is held out in turn, the
+model trains on the rest, and predictions are pooled. This reflects the realistic
+"new patient" scenario.
 """
 
 import os
@@ -23,7 +24,7 @@ import matplotlib
 
 matplotlib.use("Agg")  # headless
 import matplotlib.pyplot as plt
-from sklearn.metrics import confusion_matrix, accuracy_score, roc_curve, auc
+from sklearn.metrics import confusion_matrix, accuracy_score, roc_curve, auc, roc_auc_score
 
 # Reuse the exact data loader + model from the training script.
 from train import load, make_model, LABELS
@@ -31,13 +32,15 @@ from train import load, make_model, LABELS
 HERE = os.path.dirname(__file__)
 FIG_DIR = os.path.join(HERE, "figures")
 
-TREMOR_IDX = LABELS.index("tremor")
 ACCENT = "#E8833A"   # tremor (orange, matches the app)
 REST = "#3FA34D"     # rest (green, matches the app)
 
+N_BOOTSTRAP = 2000
+RNG = np.random.default_rng(42)
 
-def run_lopo(X, y, groups):
-    """Pooled LOPO predictions, probabilities, and per-participant accuracy."""
+
+def run_loo(X, y, groups):
+    """Pooled leave-one-out predictions, probabilities, and per-participant acc."""
     true, pred, prob = [], [], []
     per_participant = {}
     for pid in sorted(np.unique(groups)):
@@ -51,6 +54,21 @@ def run_lopo(X, y, groups):
     return np.array(true), np.array(pred), np.array(prob), per_participant
 
 
+def auc_with_ci(y_bin, prob):
+    """Point AUC plus a percentile bootstrap 95% confidence interval."""
+    point = roc_auc_score(y_bin, prob)
+    n = len(y_bin)
+    scores = []
+    for _ in range(N_BOOTSTRAP):
+        idx = RNG.integers(0, n, n)
+        # Skip degenerate resamples that contain a single class.
+        if len(np.unique(y_bin[idx])) < 2:
+            continue
+        scores.append(roc_auc_score(y_bin[idx], prob[idx]))
+    lo, hi = np.percentile(scores, [2.5, 97.5])
+    return point, lo, hi
+
+
 def fig_confusion(true, pred):
     cm = confusion_matrix(true, pred, labels=LABELS)
     cm_norm = cm / cm.sum(axis=1, keepdims=True)
@@ -59,7 +77,7 @@ def fig_confusion(true, pred):
     ax.set_xticks(range(len(LABELS)), LABELS)
     ax.set_yticks(range(len(LABELS)), LABELS)
     ax.set_xlabel("Predicted"); ax.set_ylabel("True")
-    ax.set_title("Confusion matrix (pooled LOPO)")
+    ax.set_title("Confusion matrix (pooled LOO)")
     for i in range(len(LABELS)):
         for j in range(len(LABELS)):
             ax.text(j, i, f"{cm[i, j]}\n{cm_norm[i, j]:.0%}",
@@ -79,7 +97,7 @@ def fig_per_participant(per_participant):
     ax.text(len(pids) - 0.5, mean + 0.01, f"mean {mean:.0%}",
             ha="right", color="gray", fontsize=9)
     ax.set_ylim(0, 1.05); ax.set_ylabel("Held-out accuracy")
-    ax.set_title("Leave-one-participant-out accuracy")
+    ax.set_title("Leave-one-out accuracy")
     for b, a in zip(bars, accs):
         ax.text(b.get_x() + b.get_width() / 2, a + 0.01, f"{a:.0%}",
                 ha="center", fontsize=8)
@@ -90,14 +108,34 @@ def fig_per_participant(per_participant):
 def fig_roc(true, prob):
     y_bin = (true == "tremor").astype(int)
     fpr, tpr, _ = roc_curve(y_bin, prob)
-    roc_auc = auc(fpr, tpr)
-    fig, ax = plt.subplots(figsize=(4.4, 4.0))
-    ax.plot(fpr, tpr, color=ACCENT, lw=2, label=f"AUC = {roc_auc:.3f}")
+    point, lo, hi = auc_with_ci(y_bin, prob)
+
+    # Bootstrap a confidence band for the ROC curve itself.
+    mean_fpr = np.linspace(0, 1, 100)
+    n = len(y_bin)
+    tprs = []
+    for _ in range(N_BOOTSTRAP):
+        idx = RNG.integers(0, n, n)
+        if len(np.unique(y_bin[idx])) < 2:
+            continue
+        bf, bt, _ = roc_curve(y_bin[idx], prob[idx])
+        interp = np.interp(mean_fpr, bf, bt)
+        interp[0] = 0.0
+        tprs.append(interp)
+    tpr_lo = np.percentile(tprs, 2.5, axis=0)
+    tpr_hi = np.percentile(tprs, 97.5, axis=0)
+
+    fig, ax = plt.subplots(figsize=(4.6, 4.2))
+    ax.fill_between(mean_fpr, tpr_lo, tpr_hi, color=ACCENT, alpha=0.25,
+                    label="95% CI")
+    ax.plot(fpr, tpr, color=ACCENT, lw=2,
+            label=f"AUC = {point:.3f}\n(95% CI {lo:.3f}–{hi:.3f})")
     ax.plot([0, 1], [0, 1], ls="--", color="gray", lw=1)
     ax.set_xlabel("False positive rate"); ax.set_ylabel("True positive rate")
-    ax.set_title("ROC — tremor vs rest (pooled LOPO)")
-    ax.legend(loc="lower right")
+    ax.set_title("ROC — tremor vs rest (pooled LOO)")
+    ax.legend(loc="lower right", fontsize=9)
     _save(fig, "roc_curve.png")
+    return point, lo, hi
 
 
 def fig_importances(X, y, feat_cols):
@@ -126,13 +164,14 @@ def _save(fig, name):
 def main():
     os.makedirs(FIG_DIR, exist_ok=True)
     _, X, y, groups, feat_cols = load()
-    print("Running LOPO for figures ...")
-    true, pred, prob, per_participant = run_lopo(X, y, groups)
+    print("Running LOO for figures ...")
+    true, pred, prob, per_participant = run_loo(X, y, groups)
     fig_confusion(true, pred)
     fig_per_participant(per_participant)
-    fig_roc(true, prob)
+    point, lo, hi = fig_roc(true, prob)
     fig_importances(X, y, feat_cols)
-    print(f"\nPooled LOPO accuracy: {accuracy_score(true, pred):.3f}")
+    print(f"\nPooled LOO accuracy: {accuracy_score(true, pred):.3f}")
+    print(f"Pooled LOO AUC:      {point:.3f} (95% CI {lo:.3f}–{hi:.3f})")
 
 
 if __name__ == "__main__":

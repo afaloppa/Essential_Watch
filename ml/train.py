@@ -4,10 +4,10 @@ train.py
 Train a tremor-vs-rest classifier on the windowed features produced by
 prepare_data.py, then export it as a Core ML model for the watchOS app.
 
-Evaluation: Leave-One-Participant-Out (LOPO) cross-validation. Windows from the
-same person (and from the two wrists of that person) are correlated, so a random
-split would leak and inflate accuracy. LOPO reports how well the model
-generalises to a NEW patient - the realistic deployment scenario.
+Evaluation: leave-one-out (LOO) cross-validation, holding out one participant per
+fold. Windows from the same person (and from the two wrists of that person) are
+correlated, so a random split would leak and inflate accuracy. LOO reports how
+well the model generalises to a NEW patient - the realistic deployment scenario.
 
 The final model is then retrained on ALL participants and converted to
 TremorClassifier.mlmodel via coremltools.
@@ -52,9 +52,9 @@ def make_model():
     )
 
 
-def lopo_cv(X, y, groups):
-    """Leave-one-participant-out cross-validation."""
-    print("=== Leave-One-Participant-Out CV ===")
+def loo_cv(X, y, groups):
+    """Leave-one-out cross-validation (one participant held out per fold)."""
+    print("=== Leave-One-Out (LOO) CV ===")
     accs = []
     agg_true, agg_pred = [], []
     for pid in sorted(np.unique(groups)):
@@ -68,7 +68,7 @@ def lopo_cv(X, y, groups):
         agg_true.extend(y[test])
         agg_pred.extend(pred)
         print(f"  hold-out {pid}: acc={acc:.3f}  (n={test.sum()})")
-    print(f"\nMean LOPO accuracy: {np.mean(accs):.3f} +/- {np.std(accs):.3f}")
+    print(f"\nMean LOO accuracy: {np.mean(accs):.3f} +/- {np.std(accs):.3f}")
     print("\nPooled confusion matrix (rows=true, cols=pred) [rest, tremor]:")
     print(confusion_matrix(agg_true, agg_pred, labels=LABELS))
     print("\nPooled classification report:")
@@ -91,8 +91,8 @@ def export_coreml(model, feat_cols, cv_mean, cv_std):
     )
     for c in feat_cols:
         coreml_model.input_description[c] = f"window feature: {c}"
-    coreml_model.user_defined_metadata["lopo_cv_accuracy"] = f"{cv_mean:.4f}"
-    coreml_model.user_defined_metadata["lopo_cv_std"] = f"{cv_std:.4f}"
+    coreml_model.user_defined_metadata["loo_cv_accuracy"] = f"{cv_mean:.4f}"
+    coreml_model.user_defined_metadata["loo_cv_std"] = f"{cv_std:.4f}"
     coreml_model.user_defined_metadata["window_seconds"] = "2.0"
     coreml_model.user_defined_metadata["sample_rate_hz"] = "50"
     coreml_model.user_defined_metadata["input_signal"] = "userAcceleration (g)"
@@ -105,7 +105,7 @@ def main():
     print(f"Loaded {len(df)} windows, {len(feat_cols)} features, "
           f"{len(np.unique(groups))} participants.\n")
 
-    cv_mean, cv_std = lopo_cv(X, y, groups)
+    cv_mean, cv_std = loo_cv(X, y, groups)
 
     print("\n=== Training final model on all data ===")
     final = make_model()
@@ -127,8 +127,8 @@ def main():
             "window_seconds": 2.0,
             "sample_rate_hz": 50,
             "input_signal": "userAcceleration (g), gravity removed",
-            "lopo_cv_accuracy": cv_mean,
-            "lopo_cv_std": cv_std,
+            "loo_cv_accuracy": cv_mean,
+            "loo_cv_std": cv_std,
             "feature_importances": {n: float(v) for n, v in imp},
         }, f, indent=2)
     print(f"Saved -> {META_OUT}")

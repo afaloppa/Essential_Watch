@@ -47,16 +47,17 @@ ml/.venv/bin/python ml/make_figures.py
   remove gravity/drift. This yields `userAcceleration`-equivalent dynamic
   acceleration, the same quantity CoreMotion gives on the watch.
 - **Windows:** 2 s (100 samples), 1 s hop (50 % overlap).
-- **cDBS_03 skipped** — only x/y channels, no z. cDBS_09 has no shared data.
+- **Patients skipped** — cDBS_03 only x/y channels, no z. cDBS_08 and 09 have no shared data.
 - **Model:** RandomForest (200 trees, depth 12), `class_weight="balanced"`.
 
 ## Performance
 
-Leave-One-Participant-Out CV: **~0.85 mean accuracy** (generalisation to a new
-patient). Per-patient range 0.58–0.97 — the hardest patient (cDBS_06) had
-weaker/low-amplitude tremor. Top features are amplitude-based (`z_rms`, `y_rms`,
-`mag_rms`), consistent with tremor being a large oscillation, plus tremor-band
-spectral ratios.
+Leave-one-out (LOO) CV, holding out one participant per fold: **0.85 mean
+per-patient accuracy** (0.83 pooled), ROC **AUC 0.908 (95% CI 0.900–0.916)** —
+i.e. generalisation to a new patient. Per-patient range 0.58–0.97; the hardest
+patient (cDBS_06) had weaker/low-amplitude tremor. Top features are
+amplitude-based (`z_rms`, `y_rms`, `mag_rms`), consistent with tremor being a
+large oscillation, plus tremor-band spectral ratios. Figures: `make_figures.py`.
 
 ## Deploying on the watch — already wired
 

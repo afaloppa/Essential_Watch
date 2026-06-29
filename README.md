@@ -68,10 +68,11 @@ dataset's own license/terms from the Oxford data portal.
 
 ## Model performance
 
-Evaluated with **leave-one-participant-out (LOPO)** cross-validation — each
-patient is held out in turn, so these numbers reflect generalisation to a *new*
-patient. Pooled LOPO accuracy is **~0.83** (mean per-patient **~0.85**), ROC
-**AUC ≈ 0.93**. The hardest case (cDBS_06) had weak, low-amplitude tremor.
+Evaluated with **leave-one-out (LOO)** cross-validation — each patient is held
+out in turn, so these numbers reflect generalisation to a *new* patient. Pooled
+LOO accuracy is **0.83** (mean per-patient **0.85**), ROC
+**AUC = 0.908 (95% CI 0.900–0.916)**. The hardest case (cDBS_06) had weak,
+low-amplitude tremor.
 
 | | |
 |:---:|:---:|
