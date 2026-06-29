@@ -41,24 +41,23 @@ with essential tremor under DBS-OFF and DBS-ON conditions"**, an open dataset
 from the MRC Brain Network Dynamics Unit, University of Oxford.
 
 - **Source / download:** [data.mrc.ox.ac.uk — bilateral tremor measurement](https://data.mrc.ox.ac.uk/data-set/bilateral-tremor-measurement-people-essential-tremor-under-dbs-and-dbs-conditions)
-- Lives locally in `Bilateral_tremor_data/` (git-ignored; see its
-  `Dataset_Description.txt`).
+- Lives locally in `Bilateral_tremor_data/` (git-ignored)
 
-**What it contains.** Bilateral wrist-accelerometer recordings from essential-
+**What it contains:** Bilateral wrist-accelerometer recordings from essential-
 tremor patients performing a tremor-provoking posture-holding task (arms raised,
 ~30 s holds alternating with ~30 s rest), captured under two conditions:
 continuous high-frequency DBS turned **OFF** and **ON**. Raw data are shared for
-8 participants (`cDBS_01`–`cDBS_08`). Each `.mat` (MATLAB v7.3 / HDF5) holds a
+9 participants (`cDBS_01`–`cDBS_09`, 3 of them were not used for this project). Each `.mat` (MATLAB v7.3 / HDF5) holds a
 6-channel accelerometer matrix (left + right wrist, x/y/z), the sampling rate
 (2048 or 4096 Hz), and posture-block markers (`2` = block start, `3` = block end).
 
-**How this project uses it.** Only the **DBS-OFF** recordings are used — that's
+**How this project uses it:** Only the **DBS-OFF** recordings are used — that's
 the untreated condition where tremor is strongest. Each posture block is labeled
 *tremor* and the inter-block gaps *rest*; each wrist is treated as an independent
 single-wrist sample (the watch has one accelerometer on one wrist). Full
 preprocessing and training details are in [`ml/README.md`](ml/README.md).
 
-**Reference.** He S, et al. *Tremor Asymmetry and the Development of Bilateral
+**Reference:** He S, et al. *Tremor Asymmetry and the Development of Bilateral
 Phase-Specific Deep Brain Stimulation for Postural Tremor.* Movement Disorders,
 2025. [doi:10.1002/mds.30275](https://doi.org/10.1002/mds.30275) ·
 [PubMed 40546090](https://pubmed.ncbi.nlm.nih.gov/40546090/)
@@ -139,7 +138,7 @@ install on your own devices.
 > Tip: you can also build/run in the **Simulator** to explore the UI, but it
 > won't produce real readings (no motion sensor).
 
-## How it works (technical)
+## Technical Details
 
 ### Detection pipeline (on the watch)
 
